@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NPT Personal Tracker</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+#loginScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+.login-box {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 20px;
+  padding: 45px 40px;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+}
+.login-box .logo { font-size: 3rem; margin-bottom: 10px; }
+.login-box h1 { font-size: 1.7rem; color: #38bdf8; margin-bottom: 6px; }
+.login-box p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px; }
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 25px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.user-grid::-webkit-scrollbar { width: 5px; }
+.user-grid::-webkit-scrollbar-track { background: #0f172a; border-radius: 10px; }
+.user-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+.user-card {
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.user-card:hover { border-color: #38bdf8; background: #1e3a5f; transform: translateY(-2px); }
+.user-card.selected { border-color: #38bdf8; background: #1e3a5f; box-shadow: 0 0 0 3px rgba(56,189,248,0.2); }
+.user-card .avatar {
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 700; color: white;
+}
+.user-card .uname { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; text-align: center; }
+.user-card .urole { font-size: 0.72rem; color: #94a3b8; text-align: center; }
+.user-card .admin-crown { position: absolute; top: 6px; right: 8px; font-size: 0.75rem; color: #f59e0b; }
+.delete-user-btn {
+  position: absolute; top: 5px; left: 7px;
+  background: none; border: none;
+  color: #ef4444; font-size: 0.75rem;
+  cursor: pointer; opacity: 0;
+  transition: opacity 0.2s;
+}
+.user-card:hover .delete-user-btn { opacity: 1; }
+.divider {
+  display: flex; align-items: center;
+  gap: 10px; margin-bottom: 18px;
+  color: #475569; font-size: 0.8rem;
+}
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #334155; }
+.add-user-section {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 22px;
+}
+.add-user-section h3 { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; text-align: left; }
+.add-user-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.add-user-row input {
+  flex: 1; min-width: 120px;
+  background: #1e293b; border: 1px solid #475569;
+  color: #e2e8f0; padding: 9px 12px;
+  border-radius: 8px; font-size: 0.88rem; outline: none;
+}
+.add-user-row input:focus { border-color: #38bdf8; }
+.add-user-row select {
+  background: #1e293b; border: 1px solid #475569;
+  color: #e2e8f0; padding: 9px 10px;
+  border-radius: 8px; font-size: 0.85rem; outline: none; cursor: pointer;
+}
+.btn-sm {
+  background: #38bdf8; color: #0f172a;
+  padding: 9px 14px; font-size: 0.85rem;
+  border-radius: 8px; white-space: nowrap;
+  border: none; cursor: pointer; font-weight: 600;
+}
+.btn-sm:hover { background: #0ea5e9; }
+.btn-login {
+  background: #38bdf8; color: #0f172a;
+  width: 100%; padding: 13px; font-size: 1rem;
+  border-radius: 10px; border: none; cursor: pointer;
+  font-weight: 700; transition: all 0.2s;
+}
+.btn-login:hover { background: #0ea5e9; }
+.btn-login:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+.btn-danger {
+  background: #ef4444; color: white;
+  padding: 6px 12px; font-size: 0.8rem;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600;
+}
+.btn-danger:hover { background: #dc2626; }
+.btn-edit {
+  background: #f59e0b; color: #0f172a;
+  padding: 6px 12px; font-size: 0.8rem;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600;
+}
+.btn-edit:hover { background: #d97706; }
+.btn-save {
+  background: #22c55e; color: #0f172a;
+  padding: 6px 12px; font-size: 0.8rem;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600;
+}
+.btn-save:hover { background: #16a34a; }
+.btn-excel {
+  background: #16a34a; color: white;
+  padding: 8px 16px; font-size: 0.85rem;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-excel:hover { background: #15803d; }
+.btn-primary {
+  background: #38bdf8; color: #0f172a;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-primary:hover { background: #0ea5e9; }
+#appScreen { display: none; padding: 25px 20px; }
+.container { max-width: 1500px; margin: 0 auto; }
+.topbar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 14px; padding: 16px 22px;
+}
+.topbar-left h1 { font-size: 1.5rem; color: #38bdf8; }
+.topbar-left p { color: #94a3b8; font-size: 0.82rem; margin-top: 3px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.user-pill {
+  display: flex; align-items: center; gap: 10px;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 50px; padding: 7px 16px 7px 7px;
+}
+.pill-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 700; color: white;
+}
+.pill-name { font-size: 0.88rem; font-weight: 600; color: #e2e8f0; }
+.pill-role { font-size: 0.72rem; color: #94a3b8; }
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 14px; margin-bottom: 22px;
+}
+.card {
+  background: #1e293b; border-radius: 12px;
+  padding: 18px; border: 1px solid #334155; text-align: center;
+}
+.card .value { font-size: 1.9rem; font-weight: 700; color: #38bdf8; }
+.card .label { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.controls {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 22px; align-items: flex-end;
+  background: #1e293b; padding: 20px;
+  border-radius: 12px; border: 1px solid #334155;
+}
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label {
+  font-size: 0.75rem; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: #0f172a; border: 1px solid #475569;
+  color: #e2e8f0; padding: 8px 12px;
+  border-radius: 8px; font-size: 0.88rem;
+  outline: none; transition: border 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: #38bdf8; }
+.form-group textarea { resize: vertical; min-height: 38px; max-height: 80px; }
+.weekend-info {
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 10px; padding: 12px 16px;
+  margin-bottom: 18px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.83rem; color: #94a3b8;
+}
+.filter-bar {
+  display: flex; gap: 10px; margin-bottom: 18px;
+  flex-wrap: wrap; align-items: center;
+  background: #1e293b; padding: 14px 18px;
+  border-radius: 10px; border: 1px solid #334155;
+}
+.filter-bar label { font-size: 0.8rem; color: #94a3b8; white-space: nowrap; }
+.filter-bar select {
+  background: #0f172a; border: 1px solid #475569;
+  color: #e2e8f0; padding: 7px 10px;
+  border-radius: 8px; font-size: 0.85rem; outline: none;
+}
+.filter-bar select:focus { border-color: #38bdf8; }
+.table-wrapper {
+  overflow-x: auto; border-radius: 12px;
+  border: 1px solid #334155;
+}
+table { width: 100%; border-collapse: collapse; background: #1e293b; }
+thead tr { background: #0f172a; }
+th {
+  padding: 13px 11px; text-align: left;
+  font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #38bdf8;
+  white-space: nowrap; border-bottom: 2px solid #334155;
+}
+td {
+  padding: 10px 11px; border-bottom: 1px solid #1e3a5f22;
+  font-size: 0.86rem; vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #162032; }
+.week-badge { background:#1e3a5f; color:#38bdf8; border-radius:6px; padding:3px 8px; font-size:0.78rem; font-weight:600; }
+.leave-badge { background:#451a03; color:#fb923c; border-radius:6px; padding:3px 8px; font-size:0.78rem; }
+.npt-badge { background:#1a1a2e; color:#a78bfa; border-radius:6px; padding:3px 8px; font-size:0.78rem; }
+.login-badge { background:#164e63; color:#67e8f9; border-radius:6px; padding:3px 8px; font-size:0.78rem; font-weight:600; }
+.yes-badge { background:#052e16; color:#4ade80; border-radius:6px; padding:3px 10px; font-size:0.78rem; font-weight:600; }
+.no-badge { background:#2d1515; color:#f87171; border-radius:6px; padding:3px 10px; font-size:0.78rem; font-weight:600; }
+.blank-badge { background:#1e293b; color:#94a3b8; border-radius:6px; padding:3px 10px; font-size:0.78rem; font-weight:600; border:1px solid #334155; }
+.edit-input {
+  background: #0f172a; border: 1px solid #38bdf8;
+  color: #e2e8f0; padding: 4px 8px;
+  border-radius: 6px; font-size: 0.83rem;
+  min-width: 60px;
+}
+.empty-state { text-align: center; padding: 50px; color: #475569; }
+.empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+.total-row td {
+  background: #0f172a; font-weight: 700;
+  color: #38bdf8; border-top: 2px solid #334155;
+}
+.action-btns { display: flex; gap: 5px; white-space: nowrap; }
+@media (max-width: 768px) {
+  .user-grid { grid-template-columns: repeat(2, 1fr); }
+  .login-box { padding: 30px 18px; }
+  .topbar { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">📋</div>
+    <h1>NPT Personal Tracker</h1>
+    <p>Select your profile to continue</p>
+    <div class="user-grid" id="userGrid"></div>
+    <div class="divider">Add New User</div>
+    <div class="add-user-section">
+      <h3>➕ Create a new profile</h3>
+      <div class="add-user-row">
+        <input type="text" id="newUserName" placeholder="Login ID (e.g. jsmith)" maxlength="30" />
+        <select id="newUserRole">
+          <option value="Agent">Agent</option>
+          <option value="Senior Agent">Sr. Agent</option>
+          <option value="Team Lead">Team Lead</option>
+          <option value="Manager">Manager</option>
+          <option value="QA">QA</option>
+          <option value="Support">Support</option>
+        </select>
+        <button class="btn-sm" onclick="addUser()">+ Add</button>
+      </div>
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="loginAs()" disabled>
+      Select a profile to continue →
+    </button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appScreen">
+  <div class="container">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>📋 NPT Personal Tracker</h1>
+        <p id="appSubtitle">Loading...</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-excel" onclick="exportToExcel()">📥 Download Excel</button>
+        <div class="user-pill">
+          <div class="pill-avatar" id="pillAvatar"></div>
+          <div>
+            <div class="pill-name" id="pillName"></div>
+            <div class="pill-role" id="pillRole"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="card"><div class="value" id="totalDays">0</div><div class="label">Working Days</div></div>
+      <div class="card"><div class="value" id="totalNPT">0</div><div class="label">Total NPT (mins)</div></div>
+      <div class="card"><div class="value" id="totalEntries">0</div><div class="label">Total NPT Entries</div></div>
+      <div class="card"><div class="value" id="totalLeave">0</div><div class="label">Leave Days</div></div>
+      <div class="card"><div class="value" id="totalTracked">0</div><div class="label">Added to NPT Tracker</div></div>
+    </div>
+
+    <div class="weekend-info">
+      <span>ℹ️</span>
+      <span>Saturday &amp; Sunday are <strong>automatically blocked</strong>. Multiple NPT entries per date are allowed. Week numbers auto-fill when you pick a date.</span>
+    </div>
+
+    <div class="controls">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="inputDate" />
+      </div>
+      <div class="form-group">
+        <label>Week No.</label>
+        <input type="text" id="inputWeek" placeholder="Auto" readonly style="width:90px; opacity:0.7;" />
+      </div>
+      <div class="form-group">
+        <label>NPT Time (mins)</label>
+        <input type="number" id="inputNPT" min="0" max="480" placeholder="e.g. 30" style="width:120px;" />
+      </div>
+      <div class="form-group">
+        <label>Reason for NPT</label>
+        <textarea id="inputReason" placeholder="Describe NPT reason..." style="width:190px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Added to Official NPT Tracker</label>
+        <select id="inputTracked" style="width:155px;">
+          <option value="">-- Select --</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Leave</label>
+        <select id="inputLeave" style="width:150px;">
+          <option value="No">No Leave</option>
+          <option value="Casual Leave">Casual Leave</option>
+          <option value="Sick Leave">Sick Leave</option>
+          <option value="Annual Leave">Annual Leave</option>
+          <option value="Optional Leave">Optional Leave</option>
+          <option value="Half Day Leave">Half Day Leave</option>
+        </select>
+      </div>
+      <div class="form-group" style="justify-content:flex-end;">
+        <label>&nbsp;</label>
+        <button class="btn-primary" style="padding:9px 18px;" onclick="addRow()">+ Add Entry</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <label>Week:</label>
+      <select id="filterWeek" onchange="renderTable()">
+        <option value="">All Weeks</option>
+      </select>
+      <label style="margin-left:8px;">Month:</label>
+      <select id="filterMonth" onchange="renderTable()">
+        <option value="">All Months</option>
+        <option value="1">January</option><option value="2">February</option>
+        <option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option>
+        <option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select>
+      <label style="margin-left:8px;">NPT Tracker:</label>
+      <select id="filterTracked" onchange="renderTable()">
+        <option value="">All</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+        <option value="blank">Blank</option>
+      </select>
+      <label style="margin-left:8px;">Leave:</label>
+      <select id="filterLeave" onchange="renderTable()">
+        <option value="">All</option>
+        <option value="No">No Leave</option>
+        <option value="Casual Leave">Casual Leave</option>
+        <option value="Sick Leave">Sick Leave</option>
+        <option value="Annual Leave">Annual Leave</option>
+        <option value="Optional Leave">Optional Leave</option>
+        <option value="Half Day Leave">Half Day Leave</option>
+      </select>
+      <button class="btn-danger" style="margin-left:auto;" onclick="clearAll()">🗑 Clear My Data</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Login ID</th>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Week No.</th>
+            <th>NPT (mins)</th>
+            <th>NPT Reason</th>
+            <th>Official NPT Tracker</th>
+            <th>Leave Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const AVATAR_COLORS = [
+  '#6366f1','#ec4899','#f59e0b','#10b981',
+  '#3b82f6','#ef4444','#8b5cf6','#14b8a6',
+  '#f97316','#06b6d4','#84cc16','#a855f7'
+];
+
+let currentUser    = null;
+let selectedUserId = null;
+
+const DEFAULT_USERS = [
+  { id: 'user_ameralih', name: 'ameralih', role: 'Admin', color: '#f59e0b', isAdmin: true,  locked: true },
+  { id: 'user_mbahyal',  name: 'mbahyal',  role: 'Agent', color: '#6366f1', isAdmin: false, locked: true },
+];
+
+// ── User Storage ──────────────────────────────────────────────
+function getUsers() {
+  const stored = localStorage.getItem('trackerUsers_v2');
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    DEFAULT_USERS.forEach(def => {
+      if (!parsed.find(u => u.id === def.id)) parsed.unshift(def);
+    });
+    return parsed;
+  }
+  const initial = JSON.parse(JSON.stringify(DEFAULT_USERS));
+  localStorage.setItem('trackerUsers_v2', JSON.stringify(initial));
+  return initial;
+}
+function saveUsers(users) {
+  localStorage.setItem('trackerUsers_v2', JSON.stringify(users));
+}
+
+// ── Per-User Data ─────────────────────────────────────────────
+function getUserData(userId) {
+  return JSON.parse(localStorage.getItem('trackerData_v2_' + userId) || '[]');
+}
+function saveUserData(userId, data) {
+  localStorage.setItem('trackerData_v2_' + userId, JSON.stringify(data));
+}
+
+// ── Render Login Grid ─────────────────────────────────────────
+function renderUserGrid() {
+  const users = getUsers();
+  const grid  = document.getElementById('userGrid');
+  grid.innerHTML = '';
+  users.forEach(u => {
+    const initials   = u.name.split(/[\s_]/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const isSelected = selectedUserId === u.id;
+    const card = document.createElement('div');
+    card.className = 'user-card' + (isSelected ? ' selected' : '');
+    card.innerHTML = `
+      ${!u.locked ? `<button class="delete-user-btn" onclick="removeUser(event,'${u.id}')" title="Remove">✕</button>` : ''}
+      ${u.isAdmin  ? `<span class="admin-crown">👑</span>` : ''}
+      <div class="avatar" style="background:${u.color};">${initials}</div>
+      <div class="uname">${u.name}</div>
+      <div class="urole">${u.role}</div>
+    `;
+    card.addEventListener('click', () => selectUser(u.id));
+    grid.appendChild(card);
+  });
+}
+
+function selectUser(id) {
+  selectedUserId = id;
+  renderUserGrid();
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = 'Continue →';
+  btn.disabled    = false;
+}
+
+function addUser() {
+  const nameInput = document.getElementById('newUserName');
+  const name      = nameInput.value.trim();
+  const role      = document.getElementById('newUserRole').value;
+  if (!name)           { alert('Please enter a Login ID.'); return; }
+  if (name.length < 2) { alert('Login ID must be at least 2 characters.'); return; }
+  const users = getUsers();
+  if (users.find(u => u.name.toLowerCase() === name.toLowerCase())) {
+    alert('A user with this Login ID already exists.');
+    return;
+  }
+  const id    = 'user_' + Date.now();
+  const color = AVATAR_COLORS[users.length % AVATAR_COLORS.length];
+  users.push({ id, name, role, color, isAdmin: false, locked: false });
+  saveUsers(users);
+  nameInput.value = '';
+  renderUserGrid();
+  selectUser(id);
+}
+
+function removeUser(event, id) {
+  event.stopPropagation();
+  const users = getUsers();
+  const u     = users.find(x => x.id === id);
+  if (!u || u.locked) return;
+  if (!confirm(`Remove user "${u.name}"? Their data will also be deleted.`)) return;
+  saveUsers(users.filter(x => x.id !== id));
+  localStorage.removeItem('trackerData_v2_' + id);
+  if (selectedUserId === id) {
+    selectedUserId = null;
+    document.getElementById('loginBtn').textContent = 'Select a profile to continue →';
+    document.getElementById('loginBtn').disabled    = true;
+  }
+  renderUserGrid();
+}
+
+function loginAs() {
+  if (!selectedUserId) return;
+  const users = getUsers();
+  currentUser = users.find(u => u.id === selectedUserId);
+  if (!currentUser) return;
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display   = 'block';
+
+  const initials = currentUser.name.split(/[\s_]/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('pillAvatar').textContent       = initials;
+  document.getElementById('pillAvatar').style.background  = currentUser.color;
+  document.getElementById('pillName').textContent         = currentUser.name;
+  document.getElementById('pillRole').textContent         = currentUser.role + (currentUser.isAdmin ? ' 👑' : '');
+  document.getElementById('appSubtitle').textContent      = `Logged in as: ${currentUser.name} — Data is private to your account`;
+
+  resetFilters();
+  renderTable();
+  updateSummary();
+  populateWeekFilter();
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function getWeekNumber(dateStr) {
+  const d    = new Date(dateStr);
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${String(d.getDate()).padStart(2,'0')} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function resetFilters() {
+  ['filterWeek','filterMonth','filterTracked','filterLeave'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function trackedBadge(val) {
+  if (val === 'Yes') return `<span class="yes-badge">✔ Yes</span>`;
+  if (val === 'No')  return `<span class="no-badge">✘ No</span>`;
+  return `<span class="blank-badge">— Blank</span>`;
+}
+
+// ── Date Input Handler ────────────────────────────────────────
+document.getElementById('inputDate').addEventListener('change', function () {
+  const val = this.value;
+  if (!val) { document.getElementById('inputWeek').value = ''; return; }
+  const d   = new Date(val + 'T00:00:00');
+  const day = d.getDay();
+  if (day === 0 || day === 6) {
+    alert('⚠️ Weekends (Saturday & Sunday) are not allowed. Please select a weekday (Mon–Fri).');
+    this.value = '';
+    document.getElementById('inputWeek').value = '';
+    return;
+  }
+  document.getElementById('inputWeek').value = 'W' + getWeekNumber(val);
+});
+
+// ── Add Entry ─────────────────────────────────────────────────
+function addRow() {
+  if (!currentUser) return;
+  const date    = document.getElementById('inputDate').value;
+  const npt     = document.getElementById('inputNPT').value;
+  const reason  = document.getElementById('inputReason').value.trim();
+  const tracked = document.getElementById('inputTracked').value;
+  const leave   = document.getElementById('inputLeave').value;
+
+  if (!date) { alert('Please select a date.'); return; }
+  const d   = new Date(date + 'T00:00:00');
+  const day = d.getDay();
+  if (day === 0 || day === 6) { alert('⚠️ Weekends are not allowed!'); return; }
+
+  let data = getUserData(currentUser.id);
+
+  // Multiple entries per date allowed
+  data.push({
+    id:      Date.now(),
+    loginId: currentUser.name,
+    date,
+    week:    getWeekNumber(date),
+    npt:     parseInt(npt) || 0,
+    reason:  reason || '—',
+    tracked,
+    leave
+  });
+
+  data.sort((a, b) => new Date(a.date) - new Date(b.date));
+  saveUserData(currentUser.id, data);
+  clearForm();
+  renderTable();
+  updateSummary();
+  populateWeekFilter();
+}
+
+function clearForm() {
+  document.getElementById('inputDate').value    = '';
+  document.getElementById('inputWeek').value    = '';
+  document.getElementById('inputNPT').value     = '';
+  document.getElementById('inputReason').value  = '';
+  document.getElementById('inputTracked').value = '';
+  document.getElementById('inputLeave').value   = 'No';
+}
+
+// ── Delete / Edit / Save ──────────────────────────────────────
+function deleteRow(id) {
+  if (!confirm('Delete this entry?')) return;
+  let data = getUserData(currentUser.id);
+  data     = data.filter(r => r.id !== id);
+  saveUserData(currentUser.id, data);
+  renderTable(); updateSummary(); populateWeekFilter();
+}
+
+function editRow(id) {
+  const data   = getUserData(currentUser.id);
+  const record = data.find(r => r.id === id);
+  if (!record) return;
+  const row = document.getElementById('row-' + id);
+  const idx = row.cells[0].textContent;
+  row.innerHTML = `
+    <td>${idx}</td>
+    <td><span class="login-badge">${record.loginId || currentUser.name}</span></td>
+    <td>${formatDate(record.date)}</td>
+    <td>${DAYS[new Date(record.date+'T00:00:00').getDay()]}</td>
+    <td><span class="week-badge">W${record.week}</span></td>
+    <td><input class="edit-input" id="e-npt-${id}" type="number" value="${record.npt}" min="0" max="480" style="width:75px;"/></td>
+    <td><input class="edit-input" id="e-reason-${id}" type="text" value="${record.reason === '—' ? '' : record.reason}" style="width:160px;"/></td>
+    <td>
+      <select class="edit-input" id="e-tracked-${id}" style="width:110px;">
+        <option value=""   ${record.tracked===''    ?'selected':''}>-- Select --</option>
+        <option value="Yes"${record.tracked==='Yes' ?'selected':''}>Yes</option>
+        <option value="No" ${record.tracked==='No'  ?'selected':''}>No</option>
+      </select>
+    </td>
+    <td>
+      <select class="edit-input" id="e-leave-${id}" style="width:140px;">
+        <option value="No"            ${record.leave==='No'            ?'selected':''}>No Leave</option>
+        <option value="Casual Leave"  ${record.leave==='Casual Leave'  ?'selected':''}>Casual Leave</option>
+        <option value="Sick Leave"    ${record.leave==='Sick Leave'    ?'selected':''}>Sick Leave</option>
+        <option value="Annual Leave"  ${record.leave==='Annual Leave'  ?'selected':''}>Annual Leave</option>
+        <option value="Optional Leave"${record.leave==='Optional Leave'?'selected':''}>Optional Leave</option>
+        <option value="Half Day Leave"${record.leave==='Half Day Leave'?'selected':''}>Half Day Leave</option>
+      </select>
+    </td>
+    <td>
+      <div class="action-btns">
+        <button class="btn-save"   onclick="saveRow(${id})">💾 Save</button>
+        <button class="btn-danger" onclick="renderTable()">✕</button>
+      </div>
+    </td>`;
+}
+
+function saveRow(id) {
+  let data     = getUserData(currentUser.id);
+  const record = data.find(r => r.id === id);
+  if (!record) return;
+  record.npt     = parseInt(document.getElementById('e-npt-'     + id).value) || 0;
+  record.reason  = document.getElementById('e-reason-'  + id).value.trim() || '—';
+  record.tracked = document.getElementById('e-tracked-' + id).value;
+  record.leave   = document.getElementById('e-leave-'   + id).value;
+  saveUserData(currentUser.id, data);
+  renderTable(); updateSummary();
+}
+
+// ── Render Table ──────────────────────────────────────────────
+function renderTable() {
+  if (!currentUser) return;
+  const data = getUserData(currentUser.id);
+
+  const weekFilter    = document.getElementById('filterWeek').value;
+  const monthFilter   = document.getElementById('filterMonth').value;
+  const trackedFilter = document.getElementById('filterTracked').value;
+  const leaveFilter   = document.getElementById('filterLeave').value;
+
+  let filtered = data.filter(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    if (weekFilter  && r.week != weekFilter)             return false;
+    if (monthFilter && (d.getMonth()+1) != monthFilter)  return false;
+    if (trackedFilter === 'blank' && r.tracked !== '')   return false;
+    if (trackedFilter !== '' && trackedFilter !== 'blank' && r.tracked !== trackedFilter) return false;
+    if (leaveFilter && r.leave !== leaveFilter)          return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('tableBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr><td colspan="10">
+        <div class="empty-state">
+          <div class="icon">📂</div>
+          <p>No entries found. Add your first NPT entry above!</p>
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  let totalNPT = 0, totalTracked = 0;
+  const leaveDates = new Set();
+
+  let html = filtered.map((r, i) => {
+    totalNPT += r.npt;
+    if (r.leave !== 'No') leaveDates.add(r.date);
+    if (r.tracked === 'Yes') totalTracked++;
+
+    const dayName   = DAYS[new Date(r.date + 'T00:00:00').getDay()];
+    const leaveHtml = r.leave !== 'No'
+      ? `<span class="leave-badge">${r.leave}</span>`
+      : `<span style="color:#64748b;">—</span>`;
+
+    return `
+      <tr id="row-${r.id}">
+        <td>${i + 1}</td>
+        <td><span class="login-badge">${r.loginId || currentUser.name}</span></td>
+        <td>${formatDate(r.date)}</td>
+        <td>${dayName}</td>
+        <td><span class="week-badge">W${r.week}</span></td>
+        <td>${r.npt > 0 ? `<span class="npt-badge">${r.npt} min</span>` : '<span style="color:#64748b;">—</span>'}</td>
+        <td style="max-width:200px;word-break:break-word;">${r.reason}</td>
+        <td>${trackedBadge(r.tracked)}</td>
+        <td>${leaveHtml}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-edit"   onclick="editRow(${r.id})">✏️</button>
+            <button class="btn-danger" onclick="deleteRow(${r.id})">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  html += `
+    <tr class="total-row">
+      <td colspan="5" style="text-align:right;padding-right:16px;font-size:0.82rem;">TOTALS</td>
+      <td><span class="npt-badge">${totalNPT} min</span></td>
+      <td>—</td>
+      <td><span class="yes-badge">${totalTracked} entries</span></td>
+      <td><span class="leave-badge">${leaveDates.size} day(s)</span></td>
+      <td>—</td>
+    </tr>`;
+
+  tbody.innerHTML = html;
+}
+
+// ── Summary Cards ─────────────────────────────────────────────
+function updateSummary() {
+  if (!currentUser) return;
+  const data = getUserData(currentUser.id);
+
+  const uniqueDates  = new Set(data.map(r => r.date));
+  const totalDays    = uniqueDates.size;
+  const totalNPT     = data.reduce((s, r) => s + r.npt, 0);
+  const totalEntries = data.length;
+  const leaveDates   = new Set(data.filter(r => r.leave !== 'No').map(r => r.date));
+  const totalLeave   = leaveDates.size;
+  const totalTrack   = data.filter(r => r.tracked === 'Yes').length;
+
+  document.getElementById('totalDays').textContent    = totalDays;
+  document.getElementById('totalNPT').textContent     = totalNPT;
+  document.getElementById('totalEntries').textContent = totalEntries;
+  document.getElementById('totalLeave').textContent   = totalLeave;
+  document.getElementById('totalTracked').textContent = totalTrack;
+}
+
+// ── Week Filter ───────────────────────────────────────────────
+function populateWeekFilter() {
+  if (!currentUser) return;
+  const data  = getUserData(currentUser.id);
+  const weeks = [...new Set(data.map(r => r.week))].sort((a, b) => a - b);
+  const sel   = document.getElementById('filterWeek');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Weeks</option>';
+  weeks.forEach(w => {
+    const opt       = document.createElement('option');
+    opt.value       = w;
+    opt.textContent = 'Week ' + w;
+    if (w == current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+// ── Clear All Data ────────────────────────────────────────────
+function clearAll() {
+  if (!confirm(`⚠️ Delete ALL entries for "${currentUser.name}"? This cannot be undone.`)) return;
+  saveUserData(currentUser.id, []);
+  renderTable(); updateSummary(); populateWeekFilter();
+}
+
+// ── Export to Excel ───────────────────────────────────────────
+function exportToExcel() {
+  if (!currentUser) return;
+  const data = getUserData(currentUser.id);
+  if (data.length === 0) {
+    alert('No data to export. Please add entries first.');
+    return;
+  }
+
+  const headers = [
+    'No.',
+    'Login ID',
+    'Date',
+    'Day',
+    'Week Number',
+    'NPT Time (mins)',
+    'NPT Reason',
+    'Added to Official NPT Tracker',
+    'Leave Status'
+  ];
+
+  const rows = data.map((r, i) => {
+    const dayName = DAYS[new Date(r.date + 'T00:00:00').getDay()];
+    return [
+      i + 1,
+      r.loginId || currentUser.name,
+      formatDate(r.date),
+      dayName,
+      'W' + r.week,
+      r.npt,
+      `"${r.reason.replace(/"/g, '""')}"`,
+      r.tracked === '' ? 'Blank' : r.tracked,
+      r.leave
+    ];
+  });
+
+  const csvLines = [];
+  csvLines.push(headers.join(','));
+  rows.forEach(r => csvLines.push(r.join(',')));
+
+  const BOM  = '\uFEFF';
+  const blob = new Blob([BOM + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const today = new Date().toISOString().slice(0, 10);
+  link.href     = url;
+  link.download = `NPT_Personal_Tracker_${currentUser.name}_${today}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// ── Init ──────────────────────────────────────────────────────
+renderUserGrid();
+</script>
+</body>
+</html>
